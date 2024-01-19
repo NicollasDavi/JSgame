@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wizard game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Life: <span id="life"></span></h1>
+    <canvas id="jogo" width="1024" height="500"></canvas>
+
+    <script>
+        let Valuelife = 100;
+        let life = document.querySelector('#life');
+        life.innerHTML = Valuelife;
+        const ALTURA_MAXIMA = 500;
+        const LARGURA_MAXIMA = 1024;
+
+        class Sprite {
+            constructor(x, y, largura, altura, imagemSrc) {
+                this.x = x;
+                this.y = y;
+                this.largura = largura;
+                this.altura = altura;
+                this.imagem = new Image();
+                this.imagem.src = imagemSrc;
+            }
+
+            desenha(ctx) {
+                const metadeLargura = this.largura / 2;
+                const metadeAltura = this.altura / 2;
+                ctx.drawImage(this.imagem, this.x - metadeLargura, this.y - metadeAltura, this.largura, this.altura);
+            }
+
+            get centro(){
+                return {
+                    x: this.x + this.largura/2,
+                    y: this.y + this.altura/2
+                };
+            }
+
+            colideCom(outraSprite) {
+                let a = Math.abs(outraSprite.centro.x - this.centro.x);
+                let b = Math.abs(outraSprite.centro.y - this.centro.y);
+                let d = Math.sqrt(a**2 + b**2);
+                let r1 = this.altura/2;
+                let r2 = outraSprite.altura/2;
+                return d <= r1+r2;
+            }
+        }
+
+        class Meteoro extends Sprite {
+            constructor() {
+                super(LARGURA_MAXIMA, Math.random() * ALTURA_MAXIMA - 25, 100, 80, 'img/meteor.png');
+                this.velocidadeX = -4 * Math.random() - 2;
+            }
+
+            atualizar() {
+                this.x += this.velocidadeX;
+
+                if (this.x < 0) {
+                    this.x = LARGURA_MAXIMA;
+                    this.y = Math.random() * (ALTURA_MAXIMA - 25);
+                }
+            }
+
+            destruir(){
+                this.x = LARGURA_MAXIMA;
+                this.y = Math.random() * (ALTURA_MAXIMA - 25);
+            }
+        }
+
+        class Tiro extends Sprite {
+            constructor(posicaoMouse) {
+                super(posicaoMouse.x, posicaoMouse.y, 50, 50, 'img/tiro.png');
+                this.velocidadeX = 6;
+            }
+
+            atualizar() {
+                this.x += this.velocidadeX;
+                if (this.x > LARGURA_MAXIMA){
+                    this.podeSerdestruido = true
+                }
+            }
+        }
+
+        let canvasEl = document.querySelector('#jogo');
+        let ctx = canvasEl.getContext('2d');
+        let x = 50;
+        let y = 50;
+        let slime = new Sprite(x, y, 80, 100, 'img/nave.png');
+        let meteoros = [];
+        meteoros.push(new Meteoro());
+        meteoros.push(new Meteoro());
+        meteoros.push(new Meteoro());
+        meteoros.push(new Meteoro());
+        meteoros.push(new Meteoro());
+        meteoros.push(new Meteoro());
+        let tiros = [];
+
+        canvasEl.addEventListener('mousemove', (e) => {
+            x = e.offsetX;
+            y = e.offsetY;
+        });
+
+        canvasEl.addEventListener('mousedown', function(event) {
+            if (event.button === 0 || event.which === 1) {
+                darTiro();
+            }
+        });
+
+        document.addEventListener("keydown", function(event) {
+            if (event.code === "Space") {
+                darTiro();
+            }
+        });
+
+        function desenhaJogo() {
+            ctx.clearRect(0, 0, 1024, 500);
+            slime.x = x;
+            slime.y = y;
+            slime.desenha(ctx);
+            meteoros.forEach(meteoro => meteoro.desenha(ctx));
+
+            tiros.forEach(tiro => tiro.desenha(ctx));
+        }
+
+        setInterval(() => {
+            for (let meteoro of meteoros) {
+                meteoro.atualizar();
+            }
+
+            for (let meteoro of meteoros) {
+                const atingiuFoguete = meteoro.colideCom(slime);
+                if (atingiuFoguete) {
+                    meteoro.destruir();
+                    Valuelife -= 10;
+                    life.innerHTML = Valuelife;
+                }
+            }
+            for (let i =0; i< tiros.length; i++){
+                if(tiros[i].podeSerdestruido){
+                    tiros.splice([i], 1)
+
+                    alert("oi")
+                }
+            }
+            for (let tiro of tiros) {
+                tiro.atualizar();
+            }
+
+            // Filtra os tiros que saíram da tela
+            tiros = tiros.filter(tiro => tiro.x < LARGURA_MAXIMA);
+
+            // Desenha os tiros
+            tiros.forEach(tiro => tiro.desenha(ctx));
+
+            desenhaJogo();
+        }, 33);
+
+        function darTiro() {
+            let tiro = new Tiro({ x: x, y: y });
+            tiros.push(tiro);
+        }
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wizard game</title>
+    <title>Spaceship game</title>
     <style>
         canvas {
             border: 1px solid black;
@@ -15,15 +15,19 @@
 </head>
 <body>
     <h1>Life: <span id="life"></span></h1>
+    <h1>Pontos: <span id="pontos"></span></h1>
+
     <canvas id="jogo" width="1024" height="500"></canvas>
 
     <script>
         let Valuelife = 100;
         let life = document.querySelector('#life');
         life.innerHTML = Valuelife;
+        let ValuePontos = 0
+        pontos = document.querySelector('#pontos')
         const ALTURA_MAXIMA = 500;
         const LARGURA_MAXIMA = 1024;
-
+        
         class Sprite {
             constructor(x, y, largura, altura, imagemSrc) {
                 this.x = x;
@@ -75,6 +79,11 @@
             destruir(){
                 this.x = LARGURA_MAXIMA;
                 this.y = Math.random() * (ALTURA_MAXIMA - 25);
+
+                const dingM = new Audio()
+                dingM.src = 'sounds/Explosion Soun.mp3'
+                dingM.preload = 'auto'
+                dingM.play()
             }
         }
 
@@ -133,12 +142,8 @@
             tiros.forEach(tiro => tiro.desenha(ctx));
         }
 
-        setInterval(() => {
-            for (let meteoro of meteoros) {
-                meteoro.atualizar();
-            }
-
-            for (let meteoro of meteoros) {
+        function verificaColisoes(){
+             for (let meteoro of meteoros) {
                 const atingiuFoguete = meteoro.colideCom(slime);
                 if (atingiuFoguete) {
                     meteoro.destruir();
@@ -146,11 +151,31 @@
                     life.innerHTML = Valuelife;
                 }
             }
+
+            for (let meteoro of meteoros){
+                for (let tiro of tiros){
+                    const tiroAtingiuMeteoro = tiro.colideCom(meteoro)
+                    if(tiroAtingiuMeteoro){
+                        tiro.podeSerdestruido = true
+                        meteoro.destruir()
+                        ValuePontos += 1;
+                        pontos.innerHTML = ValuePontos
+                    }
+                }
+            }
+        }
+
+
+        function atulizaLogicaJogo(){
+             for (let meteoro of meteoros) {
+                meteoro.atualizar();
+            }
+
+            verificaColisoes()
+           
             for (let i =0; i< tiros.length; i++){
                 if(tiros[i].podeSerdestruido){
                     tiros.splice([i], 1)
-
-                    alert("oi")
                 }
             }
             for (let tiro of tiros) {
@@ -164,11 +189,19 @@
             tiros.forEach(tiro => tiro.desenha(ctx));
 
             desenhaJogo();
+        }
+        setInterval(() => {
+           atulizaLogicaJogo()
         }, 33);
 
         function darTiro() {
+            const dingT = new Audio()
+            dingT.src = 'sounds/Laser Gun Sound Effec.mp3'
+            dingT.preload = 'auto'
+            dingT.play()
             let tiro = new Tiro({ x: x, y: y });
             tiros.push(tiro);
+            
         }
     </script>
 </body>
